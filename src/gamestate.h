@@ -13,6 +13,12 @@ class GameState : public QObject
 public:
     explicit GameState(QList<Block *> blocks_, Shape *fallingShape_, Shape *nextShape_, Shape *holdShape_, QObject *parent = nullptr);
 
+    enum ShapeCategory { FALLING, NEXT, HOLDING };
+
+    QList<Block *> getBlocks();
+    Shape *getShape(ShapeCategory type = FALLING);
+    int countGapsCreated();
+
 private:
     QList<Block *> blocks;
     Shape *fallingShape;
