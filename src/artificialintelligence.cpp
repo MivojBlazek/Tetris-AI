@@ -10,10 +10,10 @@
 #include <QDebug>
 #include <QList>
 
-ArtificialIntelligence::ArtificialIntelligence(Scene *scene_, QObject *parent)
+ArtificialIntelligence::ArtificialIntelligence(Scene *_scene, QObject *parent)
     : QObject{parent}
 {
-    scene = scene_;
+    scene = _scene;
 }
 
 Outcome ArtificialIntelligence::findBestOutcome(GameState &state)
@@ -25,15 +25,12 @@ Outcome ArtificialIntelligence::findBestOutcome(GameState &state)
     }
     Shape *simulatedShape = new Shape(fallingShape->getShapeType());
 
-    int maxScore = 0;
+    int maxScore = -10000;
     int bestPosition = 0;
     int bestRotation = 0;
 
-    simulatedShape->rotateBackwards();
     for (int rotation = 0; rotation < 4; rotation++)
     {
-        simulatedShape->rotate();
-
         // Move to the left corner for testing each position
         for (int maxMovement = 0; maxMovement < 10; maxMovement++)
         {
@@ -45,11 +42,9 @@ Outcome ArtificialIntelligence::findBestOutcome(GameState &state)
 
         for (int column = 0; column < 10; column++)
         {
-            int dropHeight = 0;
             while (!scene->isCollision(Scene::CollisionDirection::DOWN, simulatedShape, state.getBlocks()))
             {
                 simulatedShape->moveDown();
-                dropHeight++;
             }
 
             // Append fallen blocks
@@ -61,7 +56,7 @@ Outcome ArtificialIntelligence::findBestOutcome(GameState &state)
             GameState newState(blocks, nullptr, state.getShape(GameState::ShapeCategory::NEXT), state.getShape(GameState::ShapeCategory::HOLDING));
 
             // Evaluate this position and rotation
-            HeuristicValue score = evaluatePosition(dropHeight, newState);
+            HeuristicValue score = evaluatePosition(simulatedShape->getBlocks(), newState);
 
             if (score > maxScore)
             {
@@ -71,19 +66,29 @@ Outcome ArtificialIntelligence::findBestOutcome(GameState &state)
             }
 
             // Move to next position
+            simulatedShape->setPos(simulatedShape->scenePos().x(), 0.0);
             if (!scene->isCollision(Scene::CollisionDirection::RIGHT, simulatedShape, state.getBlocks()))
             {
                 simulatedShape->moveRight();
             }
         }
+
+        // Square has only 1 rotation
+        if (simulatedShape->getShapeType() == Shape::ShapeType::O)
+        {
+            break;
+        }
+
+        // Another rotation
+        simulatedShape->setPos(0.0, CELL_SIZE);
+        simulatedShape->rotate();
     }
 
     Outcome bestMove = printOutcomeFromPosition(bestPosition, bestRotation);
-    qDebug() << bestMove << " " << maxScore; //! DEBUG
     return bestMove;
 }
 
-void ArtificialIntelligence::movePiece(Outcome &bestOutcome, Shape *shape)
+void ArtificialIntelligence::movePiece(Outcome &bestOutcome, Shape *shape, Shape *previewToUpdate)
 {
     Outcome part = bestOutcome.left(2);
     while (!part.isEmpty())
@@ -93,10 +98,18 @@ void ArtificialIntelligence::movePiece(Outcome &bestOutcome, Shape *shape)
         if (part == "Rl")
         {
             shape->rotate();
+            if (previewToUpdate && previewToUpdate != nullptr)
+            {
+                previewToUpdate->rotate();
+            }
         }
         else if (part == "Rr")
         {
             shape->rotateBackwards();
+            if (previewToUpdate && previewToUpdate != nullptr)
+            {
+                previewToUpdate->rotateBackwards();
+            }
         }
         else if (part == "Ml")
         {
@@ -111,24 +124,35 @@ void ArtificialIntelligence::movePiece(Outcome &bestOutcome, Shape *shape)
     }
 }
 
-HeuristicValue ArtificialIntelligence::evaluatePosition(const int dropHeight, GameState &state)
+HeuristicValue ArtificialIntelligence::evaluatePosition(const QList<Block *> blocks, GameState &state)
 {
-    //TODO add GameState checking for better results
-    //TODO issue with calculating gaps
+    //TODO add next and hold state checking for better results
 
-    HeuristicValue score = 0;
+    HeuristicValue score = 100;
 
     // 1. Score based on drop height
-    score += dropHeight;
+    double highestBlock = blocks[0]->scenePos().y();
+    for (Block *block : blocks)
+    {
+        if (block->scenePos().y() < highestBlock)
+        {
+            highestBlock = block->scenePos().y();
+        }
+    }
+    score += static_cast<HeuristicValue>(highestBlock / CELL_SIZE);
 
     // 2. Score based on lines cleared
-    HeuristicValue linesCleared = scene->checkFullRows(state.getBlocks()) * 100;
+    HeuristicValue linesCleared = countFullRows(state.getBlocks()) * 50;
     score += linesCleared;
 
     // 3. Score based on gaps created
     int gapsCreated = state.countGapsCreated();
-    HeuristicValue gapsScore = 100 - gapsCreated * 10;
+    HeuristicValue gapsScore = -gapsCreated * 10;
     score += gapsScore;
+
+    // 4. Score based on bumpiness
+    HeuristicValue bumpiness = state.evaluateBumpiness();
+    score += bumpiness;
 
     return score;
 }
@@ -145,7 +169,7 @@ Outcome ArtificialIntelligence::printOutcomeFromPosition(int bestPosition, int b
     {
         while (bestPosition > 0)
         {
-            bestMove.append("Ml");
+            bestMove.append("Mr");
             bestPosition--;
         }
     }
@@ -153,10 +177,37 @@ Outcome ArtificialIntelligence::printOutcomeFromPosition(int bestPosition, int b
     {
         while (bestPosition < 0)
         {
-            bestMove.append("Mr");
+            bestMove.append("Ml");
             bestPosition++;
         }
     }
 
     return bestMove;
+}
+
+int ArtificialIntelligence::countFullRows(QList<Block *> allBlocks)
+{
+    int numberOfFullRows = 0;
+
+    int blocksInRow;
+    for (auto row : scene->getRows())
+    {
+        blocksInRow = 0;
+
+        for (Block *block : allBlocks)
+        {
+            if (row->collidesWithItem(block))
+            {
+                // If block collides with selected row
+                blocksInRow++;
+            }
+        }
+        // After 10 collisions (10 blocks in a row)
+        if (blocksInRow == 10)
+        {
+            // Row should be cleared
+            numberOfFullRows++;
+        }
+    }
+    return numberOfFullRows;
 }

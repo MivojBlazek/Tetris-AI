@@ -14,3 +14,13 @@ All notable changes to this project will be documented in this file.
 ## 15.08.2024
 
 * Added heuristic function that can simulate each move and calculate score of that position
+
+## 18.08.2024
+
+* Fixed issue with calculating gaps
+
+## 19.08.2024
+
+* Fixed height drop calculation
+* Added bumpiness as heuristic measurement
+* Updated project to working version
