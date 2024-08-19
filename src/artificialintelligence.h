@@ -10,14 +10,15 @@ class ArtificialIntelligence : public QObject
 {
     Q_OBJECT
 public:
-    explicit ArtificialIntelligence(Scene *scene_, QObject *parent = nullptr);
+    explicit ArtificialIntelligence(Scene *_scene, QObject *parent = nullptr);
 
     Outcome findBestOutcome(GameState &state);
-    void movePiece(Outcome &bestOutcome, Shape *shape);
+    void movePiece(Outcome &bestOutcome, Shape *shape, Shape *previewToUpdate);
 
 private:
-    HeuristicValue evaluatePosition(const int dropHeight, GameState &state);
+    HeuristicValue evaluatePosition(const QList<Block *> blocks, GameState &state);
     Outcome printOutcomeFromPosition(int bestPosition, int bestRotation);
+    int countFullRows(QList<Block *> allBlocks);
 
     Scene *scene;
 };
