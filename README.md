@@ -1,6 +1,9 @@
 # Tetris AI
 
 This is artificial intelligence to my previous Tetris game which is written in C++.
+The main decision-making process is a heuristic-based search with greedy optimization.
+
+Algorithm simulates all possible moves and rotations for falling piece and if there is holding piece, it simulates for that too. Then it evaluates each potential outcome using a heuristic function and chooses the move with highest heuristic score.
 
 >   WARNING:
 >
