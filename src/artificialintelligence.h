@@ -17,10 +17,11 @@ public:
 
 private:
     HeuristicValue evaluatePosition(const QList<Block *> blocks, GameState &state);
-    Outcome printOutcomeFromPosition(int bestPosition, int bestRotation);
+    Outcome printOutcomeFromPosition(int bestPosition, int bestRotation, GameState::ShapeCategory shape);
     int countFullRows(QList<Block *> allBlocks);
 
     Scene *scene;
+    bool secondShape;
 };
 
 #endif // ARTIFICIAL_INTELLIGENCE_H

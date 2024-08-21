@@ -24,3 +24,7 @@ All notable changes to this project will be documented in this file.
 * Fixed height drop calculation
 * Added bumpiness as heuristic measurement
 * Updated project to working version
+
+## 20.08.2024
+
+* Added holding shape checking and swapping ability
