@@ -9,6 +9,12 @@
 
 #include <QDebug>
 #include <QList>
+#include <QApplication>
+#include <QCoreApplication>
+#include <QKeyEvent>
+#include <QTimer>
+
+#define SCORE_TO_SAVE_HOLD_SHAPE 110
 
 ArtificialIntelligence::ArtificialIntelligence(Scene *_scene, QObject *parent)
     : QObject{parent}
@@ -28,63 +34,101 @@ Outcome ArtificialIntelligence::findBestOutcome(GameState &state)
     int maxScore = -10000;
     int bestPosition = 0;
     int bestRotation = 0;
+    GameState::ShapeCategory bestShape = GameState::ShapeCategory::FALLING;
 
-    for (int rotation = 0; rotation < 4; rotation++)
+    secondShape = false;
+    while (true)
     {
-        // Move to the left corner for testing each position
-        for (int maxMovement = 0; maxMovement < 10; maxMovement++)
+        for (int rotation = 0; rotation < 4; rotation++)
         {
-            if (!scene->isCollision(Scene::CollisionDirection::LEFT, simulatedShape, state.getBlocks()))
+            // Move to the left corner for testing each position
+            for (int maxMovement = 0; maxMovement < 10; maxMovement++)
             {
-                simulatedShape->moveLeft();
+                if (!scene->isCollision(Scene::CollisionDirection::LEFT, simulatedShape, state.getBlocks()))
+                {
+                    simulatedShape->moveLeft();
+                }
             }
+
+            for (int column = 0; column < 10; column++)
+            {
+                while (!scene->isCollision(Scene::CollisionDirection::DOWN, simulatedShape, state.getBlocks()))
+                {
+                    simulatedShape->moveDown();
+                }
+
+                // Append fallen blocks
+                QList<Block *> blocks = state.getBlocks();
+                for (Block *block : simulatedShape->getBlocks())
+                {
+                    blocks.append(block);
+                }
+                GameState newState(blocks, nullptr, state.getShape(GameState::ShapeCategory::NEXT), state.getShape(GameState::ShapeCategory::HOLDING), state.getHold());
+
+                // Evaluate this position and rotation
+                HeuristicValue score = evaluatePosition(simulatedShape->getBlocks(), newState);
+
+                if (score > maxScore)
+                {
+                    maxScore = score;
+                    bestPosition = simulatedShape->scenePos().x() / CELL_SIZE;
+                    bestRotation = rotation;
+                    bestShape = secondShape ? GameState::ShapeCategory::HOLDING : GameState::ShapeCategory::FALLING;
+                }
+
+                // Move to next position
+                simulatedShape->setPos(simulatedShape->scenePos().x(), 0.0);
+                if (!scene->isCollision(Scene::CollisionDirection::RIGHT, simulatedShape, state.getBlocks()))
+                {
+                    simulatedShape->moveRight();
+                }
+            }
+
+            // Square has only 1 rotation
+            if (simulatedShape->getShapeType() == Shape::ShapeType::O)
+            {
+                break;
+            }
+
+            // Another rotation
+            simulatedShape->setPos(0.0, CELL_SIZE);
+            simulatedShape->rotate();
         }
 
-        for (int column = 0; column < 10; column++)
-        {
-            while (!scene->isCollision(Scene::CollisionDirection::DOWN, simulatedShape, state.getBlocks()))
-            {
-                simulatedShape->moveDown();
-            }
-
-            // Append fallen blocks
-            QList<Block *> blocks = state.getBlocks();
-            for (Block *block : simulatedShape->getBlocks())
-            {
-                blocks.append(block);
-            }
-            GameState newState(blocks, nullptr, state.getShape(GameState::ShapeCategory::NEXT), state.getShape(GameState::ShapeCategory::HOLDING));
-
-            // Evaluate this position and rotation
-            HeuristicValue score = evaluatePosition(simulatedShape->getBlocks(), newState);
-
-            if (score > maxScore)
-            {
-                maxScore = score;
-                bestPosition = simulatedShape->scenePos().x() / CELL_SIZE;
-                bestRotation = rotation;
-            }
-
-            // Move to next position
-            simulatedShape->setPos(simulatedShape->scenePos().x(), 0.0);
-            if (!scene->isCollision(Scene::CollisionDirection::RIGHT, simulatedShape, state.getBlocks()))
-            {
-                simulatedShape->moveRight();
-            }
-        }
-
-        // Square has only 1 rotation
-        if (simulatedShape->getShapeType() == Shape::ShapeType::O)
+        // End of the loop (max 2 times because of held shape)
+        if (secondShape)
         {
             break;
         }
 
-        // Another rotation
-        simulatedShape->setPos(0.0, CELL_SIZE);
-        simulatedShape->rotate();
+        Shape *holdShape = state.getShape(GameState::ShapeCategory::HOLDING);
+        if (holdShape && holdShape != nullptr)
+        {
+            if (!state.getHold())
+            {
+                delete simulatedShape;
+                simulatedShape = new Shape(holdShape->getShapeType());
+                secondShape = true;
+            }
+            else
+            {
+                break;
+            }
+        }
+        else
+        {
+            if (maxScore < SCORE_TO_SAVE_HOLD_SHAPE)
+            {
+                // Save to holding shape
+                bestRotation = 0;
+                bestPosition = 0;
+                bestShape = GameState::ShapeCategory::HOLDING;
+            }
+            break;
+        }
     }
 
-    Outcome bestMove = printOutcomeFromPosition(bestPosition, bestRotation);
+    Outcome bestMove = printOutcomeFromPosition(bestPosition, bestRotation, bestShape);
     return bestMove;
 }
 
@@ -126,8 +170,6 @@ void ArtificialIntelligence::movePiece(Outcome &bestOutcome, Shape *shape, Shape
 
 HeuristicValue ArtificialIntelligence::evaluatePosition(const QList<Block *> blocks, GameState &state)
 {
-    //TODO add next and hold state checking for better results
-
     HeuristicValue score = 100;
 
     // 1. Score based on drop height
@@ -157,9 +199,14 @@ HeuristicValue ArtificialIntelligence::evaluatePosition(const QList<Block *> blo
     return score;
 }
 
-Outcome ArtificialIntelligence::printOutcomeFromPosition(int bestPosition, int bestRotation)
+Outcome ArtificialIntelligence::printOutcomeFromPosition(int bestPosition, int bestRotation, GameState::ShapeCategory shape)
 {
     Outcome bestMove = "";
+    if (shape == GameState::ShapeCategory::HOLDING)
+    {
+        bestMove.append("Ho");
+    }
+
     while (bestRotation > 0)
     {
         bestMove.append("Rl"); 

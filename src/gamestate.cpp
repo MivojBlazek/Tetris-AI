@@ -16,13 +16,14 @@ inline uint qHash(const QPointF &point, uint seed = 0)
 }
 
 
-GameState::GameState(QList<Block *> _blocks, Shape *_fallingShape, Shape *_nextShape, Shape *_holdShape, QObject *parent)
+GameState::GameState(QList<Block *> _blocks, Shape *_fallingShape, Shape *_nextShape, Shape *_holdShape, bool _holdDoneThisRound, QObject *parent)
     : QObject{parent}
 {
     blocks = _blocks;
     fallingShape = _fallingShape;
     nextShape = _nextShape;
     holdingShape = _holdShape;
+    holdDoneThisRound = _holdDoneThisRound;
 }
 
 QList<Block *> GameState::getBlocks()
@@ -108,4 +109,9 @@ int GameState::evaluateBumpiness()
     }
 
     return -bumpinessScore;
+}
+
+bool GameState::getHold()
+{
+    return holdDoneThisRound;
 }
