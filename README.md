@@ -8,6 +8,8 @@ Algorithm simulates all possible moves and rotations for falling piece and if th
 >   WARNING:
 >
 >   It is required to have Tetris from https://github.com/MivojBlazek/Tetris downloaded!
+>
+>   And it is necessary to have Tetris directory named as `Tetris` and this parent directory as `Tetris-AI`. 
 
 I am free to any suggestions that can make my coding better and cleaner.
 
