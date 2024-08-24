@@ -1,10 +1,15 @@
 # Tetris AI
 
 This is artificial intelligence to my previous Tetris game which is written in C++.
+The main decision-making process is a heuristic-based search with greedy optimization.
+
+Algorithm simulates all possible moves and rotations for falling piece and if there is holding piece, it simulates for that too. Then it evaluates each potential outcome using a heuristic function and chooses the move with highest heuristic score.
 
 >   WARNING:
 >
 >   It is required to have Tetris from https://github.com/MivojBlazek/Tetris downloaded!
+>
+>   And it is necessary to have Tetris directory named as `Tetris` and this parent directory as `Tetris-AI`. 
 
 I am free to any suggestions that can make my coding better and cleaner.
 
@@ -30,7 +35,9 @@ After downloading and extracting BOTH .zip files from GitHub use Makefile to com
 
 ### Windows
 
-TODO
+>   Program was tested just only on Windows 10
+
+For Windows there is already compiled program in `./build/Windows/`. Just go to that directory and find executable file `Tetris.exe` and run it.
 
 ## Controls
 

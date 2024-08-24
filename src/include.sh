@@ -17,6 +17,7 @@ echo "HEADERS += \\" >> Tetris.pro
 echo "    $TETRIS_AI_SOURCE_DIR/gamestate.h \\" >> Tetris.pro
 echo "    $TETRIS_AI_SOURCE_DIR/artificialintelligence.h \\" >> Tetris.pro
 echo "    $TETRIS_AI_SOURCE_DIR/outcome.h" >> Tetris.pro
+echo "    $TETRIS_AI_SOURCE_DIR/heuristicvalue.h" >> Tetris.pro
 
 echo "\n///AI/// Added by script to run AI" >> config.h
 echo "#ifndef AI" >> config.h
