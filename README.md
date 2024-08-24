@@ -33,7 +33,9 @@ After downloading and extracting BOTH .zip files from GitHub use Makefile to com
 
 ### Windows
 
-TODO
+>   Program was tested just only on Windows 10
+
+For Windows there is already compiled program in `./build/Windows/`. Just go to that directory and find executable file `Tetris.exe` and run it.
 
 ## Controls
 
